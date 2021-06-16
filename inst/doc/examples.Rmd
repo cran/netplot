@@ -1,0 +1,183 @@
+---
+title: "Graph drawing with netplot"
+author: "George G. Vega Yon"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Graph drawing with netplot}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+Some features:
+
+1.  Auto-scaling of vertices using sizes relative to the plotting device.
+2.  Embedded edge color mixer.
+3.  True curved edges drawing.
+4.  User-defined edge curvature.
+5.  Nicer vertex frame color.
+6.  Better use of space filling the plotting device.
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+```{r pkgs-and-data, message=FALSE, warning=FALSE}
+library(netplot)
+library(igraph)
+library(sna)
+library(ggraph)
+
+# We will use the UKfaculty data from the igraphdata package
+data("UKfaculty", package = "igraphdata")
+
+# With a fixed layout
+set.seed(225)
+l_ukf <- layout_with_fr(UKfaculty)
+```
+
+Since igraph and statnet do the plotting using base system graphics, we can't put everything in the same device right away. Fortunately, the `gridGraphics` R package allows us to reproduce base graphics using the `grid` system, which, in combination with the function `gridExtra::grid.arrange` will let us put both base and grid graphics in the same page. First me write a func
+
+```{r}
+# Function to map base to grid
+map_base_to_grid <- function(fun) {
+  gridGraphics::grid.echo(fun)
+  grid::grid.grab()
+}
+```
+
+
+```{r igraph-sna, fig.keep='none'}
+# Mapping base to grid
+ig <- map_base_to_grid(function() plot(UKfaculty, main = "igraph"))
+nw <- map_base_to_grid(function() gplot(as.matrix(as_adj(UKfaculty)), coord = l_ukf, main = "sna"))
+```
+
+```{r nplot, fig.keep='none'}
+nplot(UKfaculty, layout = l_ukf, main="netplot")
+grid::grid.text("netplot", x = .05, y=.9)
+np <- grid::grid.grab()
+```
+
+Here is an example with [`ggraph`](https://cran.r-project.org/package=ggraph)
+
+```{r, fig.width=7, fig.height=5, fig.keep='none'}
+ggraph::ggraph(UKfaculty, layout = l_ukf) +
+  ggraph::geom_edge_arc() +
+  ggraph::geom_node_point() +
+  ggplot2::ggtitle("ggraph")
+
+gg <- grid::grid.grab()
+```
+
+
+```{r, fig.width=7, fig.height=7, fig.cap="Comparison of default `igraph`, `sna`, `ggraph`, and `netplot` default call. `nplot` fills completely the plotting area, and adjusts vertex size, edge width, and edge arrows' size accordingly to the plotting area and plotting device."}
+# Putting all together
+gridExtra::grid.arrange(ig, nw, gg, np, nrow=2, ncol=2)
+```
+
+
+# Multiple plots
+
+To arrange multiple plots in the same page we can use the `grid.arrange` function from the `gridExtra` package
+
+```{r}
+x_igraph  <- sample_smallworld(1, 20, 4, .05)
+x_network <- intergraph::asNetwork(x_igraph)
+
+l <- layout_nicely(x_igraph)
+
+# Putting two plots in the same page (one using igraph and the other network)
+gridExtra::grid.arrange(
+  nplot(x_igraph, layout = l),
+  nplot(x_network, layout = l), ncol=2, nrow=1
+)
+```
+
+
+# Nodes
+
+```{r node-scaling, fig.width=7, fig.height=7, fig.cap="Modifying `vertex.size.range`: Each figure shows a different parameter for the vertex size range. From left to right, and top down: (a) Has all vertices with the same scale of 2.5%, (b) "}
+
+gridExtra::grid.arrange(
+  nplot(UKfaculty, layout = l_ukf, vertex.size.range = c(.025, .025)),
+  nplot(UKfaculty, layout = l_ukf, vertex.size.range = c(.01, .025)),
+  nplot(UKfaculty, layout = l_ukf, vertex.size.range = c(.01, .025, 4)),
+  nplot(UKfaculty, layout = l_ukf, vertex.size.range = c(.02, .05, 4)),
+  ncol=2, nrow=2
+)
+
+
+```
+
+```{r node-shapes, fig.width=4, fig.height=4, fig.cap="Number of sides for node drawing."}
+nplot(make_ring(5), vertex.nsides = 2:6,
+      vertex.size.range = c(.1,.1),
+      edge.curvature = 0)
+```
+
+# Edges
+
+```{r sim-net}
+set.seed(12233)
+
+x <- sample_smallworld(1, size = 10, nei = 2, .1)
+l <- layout_with_fr(x)
+```
+
+
+```{r edge-color, fig.width=7, fig.height=3, fig.cap="Modifying `edge.color.mix`: Each figure shows a different parameter for the edge color mixer. From left to right, (a) colors the edges as alter, (b) mixes ego and alter's colors, and (c) only uses ego"}
+
+gridExtra::grid.arrange(
+  nplot(
+    x, layout          = l,
+    edge.color        = ~ego(mix=0, alpha = .1, col="black") + alter(mix=1),
+    vertex.size.range = c(.05,.1)
+    ),
+  nplot(
+    x, layout          = l,
+    edge.color        = ~ego(mix=.5, alpha = .1, col="black") + alter(mix=.5),
+    vertex.size.range = c(.05,.1)
+    ),
+  nplot(
+    x, layout          = l,
+    edge.color        = ~ego(mix=1, alpha = .1, col="black") + alter(mix=0),
+    vertex.size.range = c(.05,.1)
+    ),
+  ncol=3, nrow=1
+)
+
+```
+
+```{r edge-curvature, fig.width=7, fig.height=3, fig.cap="Modifying `edge.curvature`: Each figure shows a different parameter for the edge curvature. From left to right, (a) straight edges, (b) the edge between ego and alter is an arc that measures $\\pi/2$ radians (90 degree), and (c) the edge as an arc between ego and alter that measures $\\pi$ radians (180 degrees)."}
+gridExtra::grid.arrange(
+  nplot(x, layout = l, edge.curvature = 0, vertex.size.range = c(.05,.1)),
+  nplot(x, layout = l, edge.curvature = pi/2, vertex.size.range = c(.05,.1)),
+  nplot(x, layout = l, edge.curvature = pi, vertex.size.range = c(.05,.1)),
+  ncol = 3, nrow=1
+)
+```
+
+```{r edge-line-type, fig.width=6, fig.height=6, fig.cap="Changing the number of breaks in the edge (arc) and the type of line to be drawn."}
+gridExtra::grid.arrange(
+  nplot(x, layout = l, edge.line.breaks=3),
+  nplot(x, layout = l, edge.line.lty = 2, edge.line.breaks=10),
+  nplot(x, layout = l, edge.line.lty = 3, edge.line.breaks=10),
+  nplot(x, layout = l, edge.line.lty = 4, edge.line.breaks=10),
+  nrow=2, ncol=2
+)
+```
+
+# Node labels
+
+```{r}
+data(UKfaculty, package = "igraphdata")
+# fakenames <- sample
+```
+
