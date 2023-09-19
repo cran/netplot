@@ -7,27 +7,34 @@
 #' @noRd
 edge_color_mixer <- function(i, j, vcols, p = .5, alpha = .15) {
 
-  grDevices::adjustcolor(grDevices::rgb(
-    colorRamp2(vcols[c(i,j)], alpha = FALSE)(p),
-    maxColorValue = 255
-  ), alpha = alpha)
+  alphacolor(
+    sprintf(
+      "%sFF", grDevices::rgb(
+        colorRamp2(vcols[c(i,j)], alpha = FALSE)(p),
+        maxColorValue = 255
+        )
+      ), alpha.f = alpha
+    )
 
 }
 
 #' Plot a network
 #'
-#' @param x An `igraph` object.
+#' This is a description.
+#'
+#' @param x A graph. It supports networks stored as `igraph`, `network`, and
+#' matrices objects (see details).
 #' @param bg.col Color of the background.
-#' @param layout Numeric two-column matrix with the graph layout.
-#' @param vertex.size Numeric vector of length `vcount(x)`. Absolute size of the vertex.
+#' @param layout Numeric two-column matrix with the graph layout in x/y positions of the vertices.
+#' @param vertex.size Numeric vector of length `vcount(x)`. Absolute size of the vertex from 0 to 1.
 #' @param vertex.nsides Numeric vector of length `vcount(x)`. Number of sizes of
 #' the vertex. E.g. three is a triangle, and 100 approximates a circle.
-#' @param vertex.color Vector of length `vcount(x)`. Vertex colors.
-#' @param vertex.size.range Vector of length `vcount(x)`.
-#' @param vertex.frame.color Vector of length `vcount(x)`.
+#' @param vertex.color Vector of length `vcount(x)`. Vertex HEX or built in colors.
+#' @param vertex.size.range Vector of length `vcount(x)` from 0 to 1.
+#' @param vertex.frame.color Vector of length `vcount(x)`. Border of vertex in HEX or built in colors.
 #' @param vertex.frame.prop Vector of length `vcount(x)`. What proportion of the
 #' vertex does the frame occupy (values between 0 and 1).
-#' @param vertex.rot Vector of length `vcount(x)`. Passed to [npolygon],
+#' @param vertex.rot Vector of length `vcount(x)` in Radians. Passed to [npolygon],
 #' elevation degree from which the polygon is drawn.
 #' @param vertex.label Character vector of length `vcount(x)`. Labels.
 #' @param vertex.label.fontsize Numeric vector.
@@ -38,14 +45,14 @@ edge_color_mixer <- function(i, j, vcols, p = .5, alpha = .15) {
 #' top ranking according to `vertex.size`.
 #' @param vertex.label.range Numeric vector of size 2 or 3. Relative scale of
 #' `vertex.label.fontsize` in points (see [grid::gpar]).
-#' @param edge.color A vector of length `ecount(x)`. Can be `NULL` in which case
+#' @param edge.color A vector of length `ecount(x)`. In HEX or built in colors. Can be `NULL` in which case
 #' the color is picked as a mixture between ego and alters' `vertex.color` values.
-#' @param edge.width Vector of length `ecount(x)`.
-#' @param edge.width.range Vector of length `ecount(x)`.
-#' @param edge.arrow.size Vector of length `ecount(x)`.
+#' @param edge.width Vector of length `ecount(x)` from 0 to 1. All edges will be the same size.
+#' @param edge.width.range Vector of length `ecount(x)` from 0 to 1. Adjusting width according to weight.
+#' @param edge.arrow.size Vector of length `ecount(x)` from 0 to 1.
 #' @param edge.curvature Numeric vector of length `ecount(x)`. Curvature of edges
 #' in terms of radians.
-#' @param edge.line.lty Vector of length `ecount(x)`.
+#' @param edge.line.lty Vector of length `ecount(x)`. Line types in R (e.g.- 1 = Solid, 2 = Dashed, etc)
 #' @param edge.line.breaks Vector of length `ecount(x)`. Number of vertices to
 #' draw (approximate) the arc (edge).
 #' @param sample.edges Numeric scalar between 0 and 1. Proportion of edges to sample.
@@ -56,8 +63,11 @@ edge_color_mixer <- function(i, j, vcols, p = .5, alpha = .15) {
 #' @importFrom igraph layout_with_fr degree vcount ecount
 #' @importFrom grDevices adjustcolor rgb
 #' @importFrom graphics lines par plot polygon rect segments plot.new plot.window
+#' @import grid
 #'
 #' @details
+#' When `x` is of class [matrix], it will be passed to [igraph::graph_from_adjacency_matrix()].
+#'
 #' In the case of `edge.color`, the user can specify colors using [netplot-formulae].
 #' @return An object of class `c("netplot", "gTree", "grob", "gDesc")`. The object
 #' has an additional set of attributes:
@@ -81,7 +91,7 @@ NULL
 
 #' @export
 #' @rdname nplot
-nplot <- function(...) UseMethod("nplot")
+nplot <- function(x, ..., edgelist) UseMethod("nplot")
 
 #' @export
 #' @rdname nplot
@@ -91,18 +101,22 @@ nplot.igraph <- function(
   vertex.size  = igraph::degree(x, mode="in"),
   vertex.label = igraph::vertex_attr(x, "name"),
   edge.width   = igraph::edge_attr(x, "weight"),
-  ...
+  skip.arrows  = !igraph::is_directed(x),
+  ...,
+  edgelist     = NULL
   ) {
 
   if (!length(edge.width))
     edge.width <- 1L
 
   nplot.default(
+    x            = x,
     edgelist     = igraph::as_edgelist(x, names = FALSE),
     layout       = layout,
     vertex.size  = vertex.size,
     vertex.label = vertex.label,
     edge.width   = edge.width,
+    skip.arrows = skip.arrows,
     ...
   )
 
@@ -117,15 +131,32 @@ nplot.network <- function(
   layout       = sna::gplot.layout.kamadakawai(x, NULL),
   vertex.size  = sna::degree(x, cmode="indegree"),
   vertex.label = network::get.vertex.attribute(x, "vertex.names"),
-  ...
+  skip.arrows  = !network::is.directed(x),
+  ...,
+  edgelist = NULL
 ) {
 
   nplot.default(
-    edgelist    = network::as.edgelist(x),
+    x           = x,
     layout      = layout,
     vertex.size = vertex.size,
     vertex.label = vertex.label,
-    ...
+    skip.arrows = skip.arrows,
+    ...,
+    edgelist    = network::as.edgelist(x)
+  )
+
+}
+
+#' @export
+#' @rdname nplot
+#' @importFrom igraph graph_from_adjacency_matrix
+nplot.matrix <- function(x, ..., edgelist = NULL) {
+
+  nplot.igraph(
+    x = igraph::graph_from_adjacency_matrix(x),
+    ...,
+    edgelist = NULL
   )
 
 }
@@ -196,14 +227,14 @@ netplot_theme <- (function() {
 #' of the figure.
 #' @seealso [nplot_base]
 nplot.default <- function(
-  edgelist,
+  x,
   layout,
   vertex.size             = 1,
   bg.col                  = "transparent",
-  vertex.nsides           = 15,
+  vertex.nsides           = 10,
   vertex.color            = grDevices::hcl.colors(1),
   vertex.size.range       = c(.01, .03),
-  vertex.frame.color      = grDevices::adjustcolor(vertex.color, red.f = .75, green.f = .75, blue.f = .75),
+  vertex.frame.color      = NULL,
   vertex.rot              = 0,
   vertex.frame.prop       = .2,
   vertex.label            = NULL,
@@ -216,25 +247,115 @@ nplot.default <- function(
   edge.width              = 1,
   edge.width.range        = c(1, 2),
   edge.arrow.size         = NULL,
-  edge.color              = ~ ego(alpha = .25) + alter,
+  edge.color              = ~ ego(alpha = .1, col = "gray") + alter,
   edge.curvature          = pi/3,
   edge.line.lty           = "solid",
-  edge.line.breaks        = 10,
+  edge.line.breaks        = 5,
   sample.edges            = 1,
   skip.vertex             = FALSE,
   skip.edges              = FALSE,
   skip.arrows             = skip.edges,
   add                     = FALSE,
   zero.margins            = TRUE,
-  ...
+  ...,
+  edgelist
   ) {
 
+  # We turn off the device if not need
+  if (length(grDevices::dev.list()) == 0L) {
+    on.exit(
+      grDevices::dev.off(grDevices::dev.cur())
+    )
+  }
 
   # listing objects
   netenv <- environment()
 
-  netenv$N <- nrow(layout)
-  netenv$M <- nrow(edgelist)
+  # Checking layout
+  if (!inherits(layout, what = c("matrix")))
+    stop(
+      "-layout- should be of class 'matrix'. It currently is '",
+      class(layout),
+      "'"
+      )
+
+  N <- nrow(layout)
+  M <- nrow(edgelist)
+  graph_class <- class(x)
+
+  # Mapping attributes ---------------------------------------------------------
+
+  # Nsides
+  if (length(vertex.nsides) && inherits(vertex.nsides, "formula")) {
+
+    rhs <- as.character(vertex.nsides[[2]])
+    vertex.nsides <- map_attribute_to_shape(
+      get_vertex_attribute(graph = x, attribute = rhs)
+    )
+
+  }
+
+  # And size
+  if (length(vertex.size) && inherits(vertex.size, "formula")) {
+
+    rhs <- as.character(vertex.size[[2]])
+    vertex.size <- get_vertex_attribute(graph = x, attribute = rhs)
+
+    # Now check if it is numeric. If not, it should return an error
+    if (!is.numeric(vertex.size)) {
+      stop("vertex.size must be numeric")
+    }
+
+  }
+
+  # Edges width
+  if (length(edge.width) && inherits(edge.width, "formula")) {
+
+    rhs <- as.character(edge.width[[2]])
+    edge.width <- get_edge_attribute(graph = x, attribute = rhs)
+
+    # Now check if it is numeric. If not, it should return an error
+    if (!is.numeric(edge.width)) {
+      stop("edge.width must be numeric")
+    }
+
+  }
+
+  # Sampling edges -------------------------------------------------------------
+  if (sample.edges < 1) {
+
+    sample.edges <- sample.int(
+      netenv$M, floor(netenv$M * sample.edges),
+      replace = FALSE
+      )
+
+    sample.edges <- sort(sample.edges)
+
+    edgelist <- edgelist[sample.edges, , drop=FALSE]
+
+    # Do we need to resize the edgepars?
+    epars <- c(
+      "edge.width",
+      "edge.width.range",
+      "edge.arrow.size",
+      "edge.color",
+      "edge.curvature",
+      "edge.line.lty",
+      "edge.line.breaks"
+      )
+
+    for (epar in epars) {
+
+      if (length(netenv[[epar]]) == netenv$M)
+        netenv[[epar]] <- netenv[[epar]][sample.edges]
+
+    }
+
+    netenv$M <- length(sample.edges)
+
+  }
+
+  # end ------------------------------------------------------------------------
 
   # This function will repeat a patter taking into account the number of columns
   .rep <- function(x, .times) {
@@ -255,17 +376,19 @@ nplot.default <- function(
     if (length(netenv[[p]]) > 0 && length(netenv[[p]]) < netenv$M)
       netenv[[p]] <- .rep(netenv[[p]], netenv$M)
 
-
   # Adjusting size -------------------------------------------------------------
 
   # Adjusting layout to fit the device
   netenv$layout <- fit_coords_to_dev(netenv$layout)
 
   # Rescaling size
-  netenv$vertex.size <- rescale_size(
-    netenv$vertex.size,
-    rel = netenv$vertex.size.range
-    )
+  if (!skip.vertex) {
+    netenv$vertex.size <- rescale_size(
+      netenv$vertex.size,
+      rel = netenv$vertex.size.range
+      )
+  } else
+    netenv$vertex.size <- rep(0, netenv$N)
 
   # Rescaling edges
   netenv$edge.width <- rescale_size(
@@ -276,6 +399,9 @@ nplot.default <- function(
   # Rescaling arrows
   if (!length(netenv$edge.arrow.size))
     netenv$edge.arrow.size <- netenv$vertex.size[edgelist[,1]]/1.5
+
+  if (netenv$skip.arrows)
+    netenv$edge.arrow.size <- rep(0.0, length(netenv$edge.arrow.size))
 
   # Rescaling text
   if (!length(netenv$vertex.label.fontsize))
@@ -301,7 +427,9 @@ nplot.default <- function(
 
   # Creating layout
   # Solution from this answer https://stackoverflow.com/a/48084527
+
   asp <- grDevices::dev.size()
+
   lo  <- grid::grid.layout(
     widths  = grid::unit(1, "null"),
     heights = grid::unit(asp[2]/asp[1], "null"),
@@ -318,14 +446,21 @@ nplot.default <- function(
   )
 
   # Generating grobs -----------------------------------------------------------
-  grob.vertex <- vector("list", netenv$N)
-  for (v in 1:netenv$N)
-    grob.vertex[[v]] <- grob_vertex(netenv, v)
+  if (!skip.vertex) {
+    grob.vertex <- vector("list", netenv$N)
+    for (v in 1:netenv$N)
+      grob.vertex[[v]] <- grob_vertex(netenv, v) 
+  } else
+    grob.vertex <- NULL
 
-  grob.edge <- vector("list", netenv$M)
-  for (e in 1:netenv$M)
-    grob.edge[[e]] <- grob_edge(netenv, e)
+  if (!skip.edges || !skip.arrows) {
 
+    grob.edge <- vector("list", netenv$M)
+    for (e in 1:netenv$M)
+      grob.edge[[e]] <- grob_edge(netenv, e)
+
+  } else
+    grob.edge <- NULL
   # Agregated grob -------------------------------------------------------------
   ans <- do.call(
     grid::gTree,
@@ -351,27 +486,34 @@ nplot.default <- function(
   background <- grid::rectGrob(
     gp = grid::gpar(
       fill = bg.col,
-      col  = grDevices::adjustcolor(bg.col, red.f = .75, green.f = .75, blue.f = .75)
+      col  = if (inherits(bg.col, c("GridRadialGradient", "GridPattern"))) {
+        grDevices::adjustcolor("gray", red.f = .75, green.f = .75, blue.f = .75)
+      } else {
+        grDevices::adjustcolor(bg.col, red.f = .75, green.f = .75, blue.f = .75)
+      }
     ),
     name = "background",
     vp   = grid::viewport(name = "background-vp")
   )
 
   ans <- grid::gTree(
-    children  = grid::gList(background, ans),
-    name      = netplot_name$new(),
-    .xlim     = netenv$xlim,
-    .ylim     = netenv$ylim,
-    .layout   = netenv$layout,
-    .edgelist = netenv$edgelist,
-    .N        = netenv$N,
-    .M        = netenv$M
+    children     = grid::gList(background, ans),
+    name         = netplot_name$new(),
+    .xlim        = netenv$xlim,
+    .ylim        = netenv$ylim,
+    .layout      = netenv$layout,
+    .edgelist    = netenv$edgelist,
+    .N           = netenv$N,
+    .M           = netenv$M,
+    .graph       = netenv$x,
+    .graph_class = netenv$graph_class
   )
 
   class(ans) <- c("netplot", class(ans))
 
   # Passing edge color
-  if (length(vertex.color))
+  if (!skip.vertex && length(vertex.color)) {
+
     ans <- set_vertex_gpar(
       x       = ans,
       element = "core",
@@ -379,7 +521,27 @@ nplot.default <- function(
       col     = vertex.color
     )
 
-  if (length(vertex.frame.color))
+    vertex.color <- get_vertex_gpar(
+      x = ans, element = "core", "fill"
+      )$fill
+
+  }
+
+  if (!skip.vertex && !length(vertex.frame.color)) {
+
+    if (inherits(vertex.color, "character")) {
+
+      vertex.frame.color <- grDevices::adjustcolor(
+        vertex.color,
+        red.f = .75, green.f = .75, blue.f = .75
+        )
+
+    } else
+      vertex.frame.color <- .rep("darkgray", N)
+
+  }
+
+  if (!skip.vertex)
     ans <- set_vertex_gpar(
       x       = ans,
       element = "frame",
@@ -387,20 +549,20 @@ nplot.default <- function(
       col     = vertex.frame.color
     )
 
-  if (length(edge.color)) {
+  if (!skip.edges && length(edge.color)) {
 
     ans <- set_edge_gpar(x = ans, element = "line", col = edge.color)
 
-    gp <- get_edge_gpar(x = ans, element = "line", "col", simplify=FALSE)$col
-    gp <- sapply(seq_along(gp), function(i) gp[[i]][netenv$edge.line.breaks[i]])
+    if (!skip.arrows) {
 
-    ans <- set_edge_gpar(x = ans, "arrow", fill = gp, col=gp)
+      gp <- get_edge_gpar(x = ans, element = "line", "col", simplify=FALSE)$col
+      gp <- sapply(seq_along(gp), function(i) gp[[i]][netenv$edge.line.breaks[i]])
+      ans <- set_edge_gpar(x = ans, "arrow", fill = gp, col=gp)
+
+    }
   }
 
-
-
   ans
-
 
 }
 
@@ -425,10 +587,11 @@ nplot.default <- function(
 
 
 #' @rdname nplot
+#' @param legend Logical scalar. When `TRUE` it adds a legend.
 #' @export
 #' @param newpage Logical scalar. When `TRUE` calls [grid::grid.newpage].
 #' @param y,... Ignored
-print.netplot <- function(x, y = NULL, newpage=TRUE, ...) {
+print.netplot <- function(x, y = NULL, newpage = TRUE, legend = TRUE, ...) {
 
   # Drawing
   if (newpage) {
@@ -436,6 +599,13 @@ print.netplot <- function(x, y = NULL, newpage=TRUE, ...) {
   }
 
   grid::grid.draw(x)
+
+  # If legend
+  if (legend) {
+
+    color_nodes_legend(x)
+
+  }
 
   # Storing the value
   .Last.netplot$set(x)
@@ -445,8 +615,41 @@ print.netplot <- function(x, y = NULL, newpage=TRUE, ...) {
 
 }
 
+#' Find a vertex in the current plot
+#'
+#' This function is a wrapper of [grid::grid.locator()], and provides a way to
+#' find the coordinates of a vertex in the current plot. It is useful to
+#' identify the vertex that is being clicked in a plot.
+#'
+#' @param x An object of class `netplot`
+#' @return A list with the name of the vertex, the x and y coordinates and the
+#'  viewport where it is located.
+#' @details This function only works in interactive mode. Once it is called,
+#' the user can click on a vertex in the plot. The function will return the
+#' name of the vertex, the x and y coordinates and the viewport where it is
+#' located. If `x` is not specified, the last plotted `netplot` object will be
+#' used.
+#'
+#' @export
+#' @examples
+#' library(igraph)
+#' library(netplot)
+#' set.seed(1)
+#' x <- sample_smallworld(1, 200, 5, 0.03)
+#'
+#' # Plotting
+#' nplot(x)
+#'
+#' # Clicking (only works in interactive mode)
+#' if (interactive()) {
+#'  res <- locate_vertex()
+#'  print(res)
+#' }
+#'
+locate_vertex <- function(x = NULL) {
 
-locate_vertex <- function(x) {
+  if (is.null(x))
+    x <- .Last.netplot$get()
 
   # Trying to fecth the
   on.exit(grid::upViewport(0L))
@@ -457,10 +660,10 @@ locate_vertex <- function(x) {
 
   loc <- grid::grid.locator()
   loc <- as.vector(unlist(loc))
-  loc <- matrix(loc, ncol = 2, nrow = nrow(x$layout), byrow = TRUE)
+  loc <- matrix(loc, ncol = 2, nrow = x$.N, byrow = TRUE)
 
   # Which is the closests one
-  v <- which.min(abs(x$layout - loc))
+  v <- which.min(abs(x$.layout - loc))
 
   list(
     name = sprintf("vertex.%i", v),

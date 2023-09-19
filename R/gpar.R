@@ -117,54 +117,34 @@ set_gpar <- function(x, type, element, idx, ...) {
   else
     unname(split(x$.edgelist[idx,], idx)) #lapply(idx, function(e) x$.edgelist[e, ])
 
-  # Converting
-  listme <- function(...) {
-
-    x    <- list(...)
-    nill <- names(x)[which(sapply(x, is.null))]
-    for (p in nill)
-      x[p] <- NULL
-
-    f <- function(...) {
-      structure(
-        c(list(...), rep(list(NULL), length(nill))),
-        names = c(names(x), nill)
-        )
-    }
-
-    do.call(Map, c(list(f=f), x))
-
-  }
-
   n <- ifelse(type == "edge", x$.M, x$.N)
-  dots <- c(list(placeholder=integer(n)), list(...))
-
-  for (d in names(dots))
-    if (inherits(dots[[d]], "formula"))
-      dots[[d]] <- netplot_edge_formulae(x, dots[[d]])
-
-  dots <- do.call(listme, dots)
+  dots <- extend_parameter(x = x, n = n, ...)
 
   # Updating the
   for (i in seq_along(idx)) {
 
-    np_validate$gpar(dots[[i]][-1])
-
     # Fabricating the name
     iname <- netplot_name$make(idx[[i]])
 
-    for (p in names(dots[[i]][-1])) {
-      if (!missing(element))
-        x$children$graph$children[[iname]]$children[[element]]$gp[[p]] <- dots[[i]][[p]]
-      else
-        x$children$graph$children[[iname]]$gp[[p]] <- dots[[i]][[p]]
+    ele <- x$children$graph$children[[iname]]$children[[element]]
+
+    if (!missing(element) & !is.null(ele)) {
+
+      x$children$graph$children[[iname]]$children[[element]] <-
+        grid::editGrob(
+            grob = ele,
+            gp = do.call(grid::gpar, dots[[i]])
+          )
+
+    } else {
+
+      x$children$graph$children[[iname]] <- grid::editGrob(
+        grob = x$children$graph$children[[iname]],
+        gp = do.call(grid::gpar, dots[[i]])
+      )
 
     }
 
-    if (!missing(element))
-      class(x$children$graph$children[[iname]]$children[[element]]$gp) <- "gpar"
-    else
-      class(x$children$graph$children[[iname]]$gp) <- "gpar"
   }
 
   # Returning the grob
@@ -207,7 +187,41 @@ set_vertex_gpar <- function(x, element, idx, ...) {
   if (missing(idx))
     idx <- seq_len(x$.N)
 
-  set_gpar(x, type = "vertex", element = element, idx = idx, ...)
+  # Step 0: Check whether col or fill was passed through ...
+  dots <- list(...)
+
+  # Step 1: Check if col/fill is a formula
+  if(inherits(dots$col, "formula") || inherits(dots$fill, "formula")) {
+
+    # Step 2: Extract RHS of formula using terms()
+    if (inherits(dots$col, "formula")) {
+      color_var <- attr(terms(dots$col), "term.labels")
+    }
+    if (inherits(dots$fill, "formula")) {
+      fill_var <- attr(terms(dots$fill), "term.labels")
+    }
+
+    # Step 3: Call color_nodes() with graph and attribute
+    if (inherits(dots$col, "formula")) {
+      dots$col <- color_nodes(x$.graph, color_var)
+    }
+    if (inherits(dots$fill, "formula")) {
+      dots$fill <- color_nodes(x$.graph, fill_var)
+    }
+
+    # Adding information for the legend
+    x$.legend_vertex_col <- dots$col
+    x$.legend_vertex_fill <- dots$fill
+
+  }
+
+  do.call(
+    set_gpar,
+    c(
+      list(x = x, type = "vertex", element = element, idx = idx),
+      dots
+    )
+  )
 
 }
 
@@ -294,3 +308,4 @@ get_gpar <- function(x, type, element, ..., idx, simplify=TRUE) {
   ans
 
 }
+

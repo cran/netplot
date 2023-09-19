@@ -1,17 +1,20 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# netplot
-
+[![CRAN
+status](https://www.r-pkg.org/badges/version/netplot)](https://cran.r-project.org/package=netplot)
+[![CRAN](https://cranlogs.r-pkg.org/badges/netplot)](https://cran.r-project.org/package=netplot)
 [![R](https://github.com/USCCANA/netplot/actions/workflows/ci.yml/badge.svg)](https://github.com/USCCANA/netplot/actions/workflows/ci.yml)
 [![Build
 status](https://ci.appveyor.com/api/projects/status/3k2m3oq6o99qcs0r?svg=true)](https://ci.appveyor.com/project/gvegayon/netplot)
 [![USC’s Department of Preventive
 Medicine](https://raw.githubusercontent.com/USCbiostats/badges/master/tommy-uscprevmed-badge.svg)](https://preventivemedicine.usc.edu)
 
-An alternative graph visualization engine that puts an emphasis on
-aesthetics at the same time of providing default parameters that provide
-visualizations that are out-of-the-box nice.
+# netplot
+
+An alternative graph visualization tool that emphasizes aesthetics,
+providing default parameters that deliver out-of-the-box lovely
+visualizations.
 
 Some features:
 
@@ -21,16 +24,18 @@ Some features:
 3.  True curved edges drawing.
 4.  User-defined edge curvature.
 5.  Nicer vertex frame color.
-6.  Better use of space filling the plotting device.
+6.  Better use of space-filling the plotting device.
 
 The package uses the `grid` plotting system (just like `ggplot2`).
 
 ## Installation
 
-<!-- You can install the released version of netplot from [CRAN](https://CRAN.R-project.org) with: -->
-<!-- ``` r -->
-<!-- install.packages("netplot") -->
-<!-- ``` -->
+You can install the released version of netplot from
+[CRAN](https://CRAN.R-project.org) with:
+
+``` r
+install.packages("netplot")
+```
 
 And the development version from [GitHub](https://github.com/) with:
 
@@ -54,6 +59,7 @@ library(igraph)
 #> 
 #>     union
 library(netplot)
+#> Loading required package: grid
 #> 
 #> Attaching package: 'netplot'
 #> The following object is masked from 'package:igraph':
@@ -108,6 +114,32 @@ ans
 
 <img src="man/figures/README-unnamed-chunk-1-1.png" width="85%" />
 
+``` r
+
+# With a legend
+nplot_legend(
+  ans, 
+  labels = paste("Group", 1:4),
+  pch    = c(21, 21, 21),
+  gp     = grid::gpar(fill = grDevices::hcl.colors(5, "Plasma")[2:4])
+  )
+```
+
+<img src="man/figures/README-unnamed-chunk-1-2.png" width="85%" />
+
+Starting version 0.2-0, we can use gradients!
+
+``` r
+ans |>
+  set_vertex_gpar(
+    element = "core",
+    fill = lapply(get_vertex_gpar(ans, "frame", "col")$col, \(i) {
+      radialGradient(c("white", i), cx1=.8, cy1=.8, r1=0)
+      }))
+```
+
+<img src="man/figures/README-uk-faculty-gradient-1.png" width="85%" />
+
 ### USairports
 
 ``` r
@@ -134,23 +166,18 @@ net <- simplify(USairports, edge.attr.comb = list(
   "ignore"
 ))
 
-# Getting a pretty color
-
-f <- 1.5
-col <- adjustcolor(
-  rev(grDevices::hcl.colors(10, alpha = .5))[1],
-  red.f = f, blue.f = f, green.f = f
-  )
-
+# Pretty graph
 nplot(
   net,
   layout            = layout,
   edge.width        = E(net)$Passengers,
-  vertex.color      = col,
+  edge.color        = 
+    ~ ego(col = "white", alpha = 0) + alter(col = "yellow", alpha = .75),
   skip.vertex       = TRUE,
-  vertex.size.range = c(0,0),
-  edge.width.range  = c(.75, 4, 4),
-  bg.col            = "black"
+  skip.arrows       = TRUE,
+  edge.width.range  = c(.75, 4, 4), 
+  bg.col            = "black",
+  edge.line.breaks  = 10
   )
 ```
 

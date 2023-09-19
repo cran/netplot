@@ -1,3 +1,23 @@
+# netplot 0.2-0
+
+*  The arguments `skip.vertex`, `skip.edges`, and `skip.arrows` now work as
+   documented.
+  
+*  New function `nplot_legend()` helps adding legends to the figure.
+
+*  New `nplot()` method for matrices.
+
+*  New feature: Gradients.
+
+*  The argument `sample.edges` now works as expected.
+
+*  `vertex.color`, `vertex.size`, and `vertex.nsides` now accepts formulas.
+
+*  `edge.width` now accepts formulas.
+
+*  New function: `locate_vertex()`.
+
+
 # netplot 0.1-0
 
 *  First CRAN release.

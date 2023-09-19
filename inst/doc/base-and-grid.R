@@ -1,7 +1,4 @@
-## ----setup, include=FALSE-----------------------------------------------------
-knitr::opts_chunk$set(echo = TRUE, fig.width = 6, fig.height = 5)
-
-## ----data-sim, warning=FALSE, message=FALSE-----------------------------------
+## ----data-sim, warning=FALSE, message=FALSE, fig.width = 6, fig.height = 5----
 library(igraph)
 
 # Simulation parameters
@@ -15,19 +12,18 @@ x1  <- x0*.4 + rnorm(n)
 # network
 net <- sample_smallworld(1, n, 4, .1)
 
-## ----netplot------------------------------------------------------------------
+## ----netplot, fig.width = 6, fig.height = 5-----------------------------------
 library(netplot)
 library(magrittr)
 
-np <- nplot(net, bg.col = "gray70") %>%
+np <- nplot(net, bg.col = "gray70", vertex.nsides = "square") %>%
   set_edge_gpar("line", col = "gray50", alpha = .7) %>%
   set_vertex_gpar("frame", fill = "black", col = "black")
 
-
-## ----baseplot-----------------------------------------------------------------
+## ----baseplot, fig.width = 6, fig.height = 5----------------------------------
 plot(x0, x1)
 
-## ----alltogether, echo=FALSE--------------------------------------------------
+## ----alltogether, echo=FALSE, fig.width = 6, fig.height = 5-------------------
 library(gridBase)
 library(grid)
 
@@ -40,14 +36,14 @@ pushViewport(vp$plot)
 pushViewport(viewport(.25, .75, width = .5, height = .5))
 grid.draw(np)
 
-## ----topright-----------------------------------------------------------------
+## ----topright, fig.width = 6, fig.height = 5----------------------------------
 plot(x0, x1)
 # vp <- baseViewports() 
 # pushViewport(vp$figure)
 pushViewport(viewport(1, 1, just = c("right", "top"), width = .3, height = .3))
 grid.draw(np)
 
-## ----tilted-------------------------------------------------------------------
+## ----tilted, fig.width = 6, fig.height = 5------------------------------------
 plot(x0, x1)
 pushViewport(
   viewport(x = .8, y = .8, width = .3, height = .3, angle = -20)

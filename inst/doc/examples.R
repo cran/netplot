@@ -34,7 +34,7 @@ nplot(UKfaculty, layout = l_ukf, main="netplot")
 grid::grid.text("netplot", x = .05, y=.9)
 np <- grid::grid.grab()
 
-## ---- fig.width=7, fig.height=5, fig.keep='none'------------------------------
+## ----fig.width=7, fig.height=5, fig.keep='none'-------------------------------
 ggraph::ggraph(UKfaculty, layout = l_ukf) +
   ggraph::geom_edge_arc() +
   ggraph::geom_node_point() +
@@ -42,7 +42,7 @@ ggraph::ggraph(UKfaculty, layout = l_ukf) +
 
 gg <- grid::grid.grab()
 
-## ---- fig.width=7, fig.height=7, fig.cap="Comparison of default `igraph`, `sna`, `ggraph`, and `netplot` default call. `nplot` fills completely the plotting area, and adjusts vertex size, edge width, and edge arrows' size accordingly to the plotting area and plotting device."----
+## ----fig.width=7, fig.height=7, fig.cap="Comparison of default `igraph`, `sna`, `ggraph`, and `netplot` default call. `nplot` fills completely the plotting area, and adjusts vertex size, edge width, and edge arrows' size accordingly to the plotting area and plotting device."----
 # Putting all together
 gridExtra::grid.arrange(ig, nw, gg, np, nrow=2, ncol=2)
 
