@@ -10,30 +10,141 @@
 \alias{print.netplot}
 \title{Plot a network}
 \usage{
-nplot(x, ..., edgelist)
+nplot(
+  x,
+  layout,
+  vertex.size = 1,
+  bg.col = "transparent",
+  vertex.nsides = 10,
+  vertex.color = grDevices::hcl.colors(1),
+  vertex.size.range = c(0.01, 0.03, 4),
+  vertex.frame.color = NULL,
+  vertex.rot = 0,
+  vertex.frame.prop = 0.2,
+  vertex.label = NULL,
+  vertex.label.fontsize = NULL,
+  vertex.label.color = adjustcolor("black", alpha.f = 0.8),
+  vertex.label.fontfamily = "sans",
+  vertex.label.fontface = "plain",
+  vertex.label.show = 0.3,
+  vertex.label.range = c(5, 15),
+  edge.width = 1,
+  edge.width.range = c(1, 2),
+  edge.arrow.size = NULL,
+  edge.color = ~ego(alpha = 0.1, col = "gray") + alter,
+  edge.curvature = pi/3,
+  edge.line.lty = "solid",
+  edge.line.breaks = 5,
+  sample.edges = 1,
+  skip.vertex = FALSE,
+  skip.edges = FALSE,
+  skip.arrows = skip.edges,
+  add = FALSE,
+  zero.margins = TRUE,
+  edgelist
+)
 
 \method{nplot}{igraph}(
   x,
   layout = igraph::layout_nicely(x),
   vertex.size = igraph::degree(x, mode = "in"),
+  bg.col = "transparent",
+  vertex.nsides = 10,
+  vertex.color = grDevices::hcl.colors(1),
+  vertex.size.range = c(0.01, 0.03, 4),
+  vertex.frame.color = NULL,
+  vertex.rot = 0,
+  vertex.frame.prop = 0.2,
   vertex.label = igraph::vertex_attr(x, "name"),
+  vertex.label.fontsize = NULL,
+  vertex.label.color = adjustcolor("black", alpha.f = 0.8),
+  vertex.label.fontfamily = "sans",
+  vertex.label.fontface = "plain",
+  vertex.label.show = 0.3,
+  vertex.label.range = c(5, 15),
   edge.width = igraph::edge_attr(x, "weight"),
+  edge.width.range = c(1, 2),
+  edge.arrow.size = NULL,
+  edge.color = ~ego(alpha = 0.1, col = "gray") + alter,
+  edge.curvature = pi/3,
+  edge.line.lty = "solid",
+  edge.line.breaks = 5,
+  sample.edges = 1,
+  skip.vertex = FALSE,
+  skip.edges = FALSE,
   skip.arrows = !igraph::is_directed(x),
-  ...,
-  edgelist = NULL
+  add = FALSE,
+  zero.margins = TRUE,
+  edgelist
 )
 
 \method{nplot}{network}(
   x,
   layout = sna::gplot.layout.kamadakawai(x, NULL),
   vertex.size = sna::degree(x, cmode = "indegree"),
+  bg.col = "transparent",
+  vertex.nsides = 10,
+  vertex.color = grDevices::hcl.colors(1),
+  vertex.size.range = c(0.01, 0.03, 4),
+  vertex.frame.color = NULL,
+  vertex.rot = 0,
+  vertex.frame.prop = 0.2,
   vertex.label = network::get.vertex.attribute(x, "vertex.names"),
+  vertex.label.fontsize = NULL,
+  vertex.label.color = adjustcolor("black", alpha.f = 0.8),
+  vertex.label.fontfamily = "sans",
+  vertex.label.fontface = "plain",
+  vertex.label.show = 0.3,
+  vertex.label.range = c(5, 15),
+  edge.width = 1,
+  edge.width.range = c(1, 2),
+  edge.arrow.size = NULL,
+  edge.color = ~ego(alpha = 0.1, col = "gray") + alter,
+  edge.curvature = pi/3,
+  edge.line.lty = "solid",
+  edge.line.breaks = 5,
+  sample.edges = 1,
+  skip.vertex = FALSE,
+  skip.edges = FALSE,
   skip.arrows = !network::is.directed(x),
-  ...,
-  edgelist = NULL
+  add = FALSE,
+  zero.margins = TRUE,
+  edgelist
 )
 
-\method{nplot}{matrix}(x, ..., edgelist = NULL)
+\method{nplot}{matrix}(
+  x,
+  layout,
+  vertex.size = 1,
+  bg.col = "transparent",
+  vertex.nsides = 10,
+  vertex.color = grDevices::hcl.colors(1),
+  vertex.size.range = c(0.01, 0.03, 4),
+  vertex.frame.color = NULL,
+  vertex.rot = 0,
+  vertex.frame.prop = 0.2,
+  vertex.label = NULL,
+  vertex.label.fontsize = NULL,
+  vertex.label.color = adjustcolor("black", alpha.f = 0.8),
+  vertex.label.fontfamily = "sans",
+  vertex.label.fontface = "plain",
+  vertex.label.show = 0.3,
+  vertex.label.range = c(5, 15),
+  edge.width = 1,
+  edge.width.range = c(1, 2),
+  edge.arrow.size = NULL,
+  edge.color = ~ego(alpha = 0.1, col = "gray") + alter,
+  edge.curvature = pi/3,
+  edge.line.lty = "solid",
+  edge.line.breaks = 5,
+  sample.edges = 1,
+  skip.vertex = FALSE,
+  skip.edges = FALSE,
+  skip.arrows = skip.edges,
+  add = FALSE,
+  zero.margins = TRUE,
+  edgelist
+)
 
 \method{nplot}{default}(
   x,
@@ -42,15 +153,15 @@ nplot(x, ..., edgelist)
   bg.col = "transparent",
   vertex.nsides = 10,
   vertex.color = grDevices::hcl.colors(1),
-  vertex.size.range = c(0.01, 0.03),
+  vertex.size.range = c(0.01, 0.03, 4),
   vertex.frame.color = NULL,
   vertex.rot = 0,
   vertex.frame.prop = 0.2,
   vertex.label = NULL,
   vertex.label.fontsize = NULL,
-  vertex.label.color = "black",
-  vertex.label.fontfamily = "HersheySans",
-  vertex.label.fontface = "bold",
+  vertex.label.color = adjustcolor("black", alpha.f = 0.8),
+  vertex.label.fontfamily = "sans",
+  vertex.label.fontface = "plain",
   vertex.label.show = 0.3,
   vertex.label.range = c(5, 15),
   edge.width = 1,
@@ -76,15 +187,9 @@ nplot(x, ..., edgelist)
 \item{x}{A graph. It supports networks stored as \code{igraph}, \code{network}, and
 matrices objects (see details).}
 
-\item{edgelist}{An edgelist.}
-
 \item{layout}{Numeric two-column matrix with the graph layout in x/y positions of the vertices.}
 
 \item{vertex.size}{Numeric vector of length \code{vcount(x)}. Absolute size of the vertex from 0 to 1.}
-
-\item{vertex.label}{Character vector of length \code{vcount(x)}. Labels.}
-
-\item{edge.width}{Vector of length \code{ecount(x)} from 0 to 1. All edges will be the same size.}
 
 \item{bg.col}{Color of the background.}
 
@@ -93,15 +198,20 @@ the vertex. E.g. three is a triangle, and 100 approximates a circle.}
 
 \item{vertex.color}{Vector of length \code{vcount(x)}. Vertex HEX or built in colors.}
 
-\item{vertex.size.range}{Vector of length \code{vcount(x)} from 0 to 1.}
+\item{vertex.size.range}{Numeric vector of length 3. Relative size for the
+minimum and maximum of the plot, and curvature of the scale. The third number
+is used as \code{size^rel[3]}.}
 
-\item{vertex.frame.color}{Vector of length \code{vcount(x)}. Border of vertex in HEX or built in colors.}
+\item{vertex.frame.color}{Vector of length \code{vcount(x)}. Border of vertex in
+HEX or built in colors.}
 
 \item{vertex.rot}{Vector of length \code{vcount(x)} in Radians. Passed to \link{npolygon},
 elevation degree from which the polygon is drawn.}
 
 \item{vertex.frame.prop}{Vector of length \code{vcount(x)}. What proportion of the
 vertex does the frame occupy (values between 0 and 1).}
+
+\item{vertex.label}{Character vector of length \code{vcount(x)}. Labels.}
 
 \item{vertex.label.fontsize}{Numeric vector.}
 
@@ -117,29 +227,38 @@ top ranking according to \code{vertex.size}.}
 \item{vertex.label.range}{Numeric vector of size 2 or 3. Relative scale of
 \code{vertex.label.fontsize} in points (see \link[grid:gpar]{grid::gpar}).}
 
-\item{edge.width.range}{Vector of length \code{ecount(x)} from 0 to 1. Adjusting width according to weight.}
+\item{edge.width}{Vector of length \code{ecount(x)} from 0 to 1. All edges will be
+the same size.}
+
+\item{edge.width.range}{Vector of length \code{ecount(x)} from 0 to 1. Adjusting
+width according to weight.}
 
 \item{edge.arrow.size}{Vector of length \code{ecount(x)} from 0 to 1.}
 
-\item{edge.color}{A vector of length \code{ecount(x)}. In HEX or built in colors. Can be \code{NULL} in which case
+\item{edge.color}{A vector of length \code{ecount(x)}. In HEX or built in colors.
+Can be \code{NULL} in which case
 the color is picked as a mixture between ego and alters' \code{vertex.color} values.}
 
 \item{edge.curvature}{Numeric vector of length \code{ecount(x)}. Curvature of edges
 in terms of radians.}
 
-\item{edge.line.lty}{Vector of length \code{ecount(x)}. Line types in R (e.g.- 1 = Solid, 2 = Dashed, etc)}
+\item{edge.line.lty}{Vector of length \code{ecount(x)}. Line types in R
+(e.g.- 1 = Solid, 2 = Dashed, etc).}
 
 \item{edge.line.breaks}{Vector of length \code{ecount(x)}. Number of vertices to
 draw (approximate) the arc (edge).}
 
-\item{sample.edges}{Numeric scalar between 0 and 1. Proportion of edges to sample.}
+\item{sample.edges}{Numeric scalar between 0 and 1. Proportion of edges to
+sample.}
 
-\item{skip.vertex, skip.edges, skip.arrows}{Logical scalar. When \code{TRUE} the object
-is not plotted.}
+\item{skip.vertex, skip.edges, skip.arrows}{Logical scalar. When \code{TRUE} the
+object is not plotted.}
 
 \item{add}{Logical scalar.}
 
 \item{zero.margins}{Logical scalar.}
+
+\item{edgelist}{An edgelist.}
 
 \item{y, ...}{Ignored}
 

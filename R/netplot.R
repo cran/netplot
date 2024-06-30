@@ -30,8 +30,11 @@ edge_color_mixer <- function(i, j, vcols, p = .5, alpha = .15) {
 #' @param vertex.nsides Numeric vector of length `vcount(x)`. Number of sizes of
 #' the vertex. E.g. three is a triangle, and 100 approximates a circle.
 #' @param vertex.color Vector of length `vcount(x)`. Vertex HEX or built in colors.
-#' @param vertex.size.range Vector of length `vcount(x)` from 0 to 1.
-#' @param vertex.frame.color Vector of length `vcount(x)`. Border of vertex in HEX or built in colors.
+#' @param vertex.size.range Numeric vector of length 3. Relative size for the
+#' minimum and maximum of the plot, and curvature of the scale. The third number
+#' is used as `size^rel[3]`.
+#' @param vertex.frame.color Vector of length `vcount(x)`. Border of vertex in
+#' HEX or built in colors.
 #' @param vertex.frame.prop Vector of length `vcount(x)`. What proportion of the
 #' vertex does the frame occupy (values between 0 and 1).
 #' @param vertex.rot Vector of length `vcount(x)` in Radians. Passed to [npolygon],
@@ -45,19 +48,24 @@ edge_color_mixer <- function(i, j, vcols, p = .5, alpha = .15) {
 #' top ranking according to `vertex.size`.
 #' @param vertex.label.range Numeric vector of size 2 or 3. Relative scale of
 #' `vertex.label.fontsize` in points (see [grid::gpar]).
-#' @param edge.color A vector of length `ecount(x)`. In HEX or built in colors. Can be `NULL` in which case
+#' @param edge.color A vector of length `ecount(x)`. In HEX or built in colors.
+#' Can be `NULL` in which case
 #' the color is picked as a mixture between ego and alters' `vertex.color` values.
-#' @param edge.width Vector of length `ecount(x)` from 0 to 1. All edges will be the same size.
-#' @param edge.width.range Vector of length `ecount(x)` from 0 to 1. Adjusting width according to weight.
+#' @param edge.width Vector of length `ecount(x)` from 0 to 1. All edges will be
+#' the same size.
+#' @param edge.width.range Vector of length `ecount(x)` from 0 to 1. Adjusting
+#' width according to weight.
 #' @param edge.arrow.size Vector of length `ecount(x)` from 0 to 1.
 #' @param edge.curvature Numeric vector of length `ecount(x)`. Curvature of edges
 #' in terms of radians.
-#' @param edge.line.lty Vector of length `ecount(x)`. Line types in R (e.g.- 1 = Solid, 2 = Dashed, etc)
+#' @param edge.line.lty Vector of length `ecount(x)`. Line types in R
+#' (e.g.- 1 = Solid, 2 = Dashed, etc).
 #' @param edge.line.breaks Vector of length `ecount(x)`. Number of vertices to
 #' draw (approximate) the arc (edge).
-#' @param sample.edges Numeric scalar between 0 and 1. Proportion of edges to sample.
-#' @param skip.vertex,skip.edges,skip.arrows Logical scalar. When `TRUE` the object
-#' is not plotted.
+#' @param sample.edges Numeric scalar between 0 and 1. Proportion of edges to
+#' sample.
+#' @param skip.vertex,skip.edges,skip.arrows Logical scalar. When `TRUE` the
+#' object is not plotted.
 #' @param add Logical scalar.
 #' @param zero.margins Logical scalar.
 #' @importFrom igraph layout_with_fr degree vcount ecount
@@ -91,33 +99,115 @@ NULL
 
 #' @export
 #' @rdname nplot
-nplot <- function(x, ..., edgelist) UseMethod("nplot")
+nplot <- function(
+  x,
+  layout,
+  vertex.size             = 1,
+  bg.col                  = "transparent",
+  vertex.nsides           = 10,
+  vertex.color            = grDevices::hcl.colors(1),
+  vertex.size.range       = c(.01, .03, 4),
+  vertex.frame.color      = NULL,
+  vertex.rot              = 0,
+  vertex.frame.prop       = .2,
+  vertex.label            = NULL,
+  vertex.label.fontsize   = NULL,
+  vertex.label.color      = adjustcolor("black", alpha.f = .80),
+  vertex.label.fontfamily = "sans",
+  vertex.label.fontface   = "plain",
+  vertex.label.show       = .3,
+  vertex.label.range      = c(5, 15),
+  edge.width              = 1,
+  edge.width.range        = c(1, 2),
+  edge.arrow.size         = NULL,
+  edge.color              = ~ ego(alpha = .1, col = "gray") + alter,
+  edge.curvature          = pi/3,
+  edge.line.lty           = "solid",
+  edge.line.breaks        = 5,
+  sample.edges            = 1,
+  skip.vertex             = FALSE,
+  skip.edges              = FALSE,
+  skip.arrows             = skip.edges,
+  add                     = FALSE,
+  zero.margins            = TRUE,
+  edgelist
+  ) {
+
+  UseMethod("nplot")
+
+}
 
 #' @export
 #' @rdname nplot
 nplot.igraph <- function(
   x,
-  layout       = igraph::layout_nicely(x),
-  vertex.size  = igraph::degree(x, mode="in"),
-  vertex.label = igraph::vertex_attr(x, "name"),
-  edge.width   = igraph::edge_attr(x, "weight"),
-  skip.arrows  = !igraph::is_directed(x),
-  ...,
-  edgelist     = NULL
+  layout                  = igraph::layout_nicely(x),
+  vertex.size             = igraph::degree(x, mode="in"),
+  bg.col                  = "transparent",
+  vertex.nsides           = 10,
+  vertex.color            = grDevices::hcl.colors(1),
+  vertex.size.range       = c(.01, .03, 4),
+  vertex.frame.color      = NULL,
+  vertex.rot              = 0,
+  vertex.frame.prop       = .2,
+  vertex.label            = igraph::vertex_attr(x, "name"),
+  vertex.label.fontsize   = NULL,
+  vertex.label.color      = adjustcolor("black", alpha.f = .80),
+  vertex.label.fontfamily = "sans",
+  vertex.label.fontface   = "plain",
+  vertex.label.show       = .3,
+  vertex.label.range      = c(5, 15),
+  edge.width              = igraph::edge_attr(x, "weight"),
+  edge.width.range        = c(1, 2),
+  edge.arrow.size         = NULL,
+  edge.color              = ~ ego(alpha = .1, col = "gray") + alter,
+  edge.curvature          = pi/3,
+  edge.line.lty           = "solid",
+  edge.line.breaks        = 5,
+  sample.edges            = 1,
+  skip.vertex             = FALSE,
+  skip.edges              = FALSE,
+  skip.arrows             = !igraph::is_directed(x),
+  add                     = FALSE,
+  zero.margins            = TRUE,
+  edgelist
   ) {
 
   if (!length(edge.width))
     edge.width <- 1L
 
   nplot.default(
-    x            = x,
-    edgelist     = igraph::as_edgelist(x, names = FALSE),
-    layout       = layout,
-    vertex.size  = vertex.size,
+    x = x,
+    layout = layout,
+    vertex.size = vertex.size,
+    bg.col = bg.col,
+    vertex.nsides = vertex.nsides,
+    vertex.color = vertex.color,
+    vertex.size.range = vertex.size.range,
+    vertex.frame.color = vertex.frame.color,
+    vertex.rot = vertex.rot,
+    vertex.frame.prop = vertex.frame.prop,
     vertex.label = vertex.label,
-    edge.width   = edge.width,
+    vertex.label.fontsize = vertex.label.fontsize,
+    vertex.label.color = vertex.label.color,
+    vertex.label.fontfamily = vertex.label.fontfamily,
+    vertex.label.fontface = vertex.label.fontface,
+    vertex.label.show = vertex.label.show,
+    vertex.label.range = vertex.label.range,
+    edge.width = edge.width,
+    edge.width.range = edge.width.range,
+    edge.arrow.size = edge.arrow.size,
+    edge.color = edge.color,
+    edge.curvature = edge.curvature,
+    edge.line.lty = edge.line.lty,
+    edge.line.breaks = edge.line.breaks,
+    sample.edges = sample.edges,
+    skip.vertex = skip.vertex,
+    skip.edges = skip.edges,
     skip.arrows = skip.arrows,
-    ...
+    add = add,
+    zero.margins = zero.margins,
+    edgelist = igraph::as_edgelist(x, names = FALSE)
   )
 
 }
@@ -128,22 +218,70 @@ nplot.igraph <- function(
 #' @importFrom sna gplot.layout.kamadakawai
 nplot.network <- function(
   x,
-  layout       = sna::gplot.layout.kamadakawai(x, NULL),
-  vertex.size  = sna::degree(x, cmode="indegree"),
-  vertex.label = network::get.vertex.attribute(x, "vertex.names"),
-  skip.arrows  = !network::is.directed(x),
-  ...,
-  edgelist = NULL
+  layout                  = sna::gplot.layout.kamadakawai(x, NULL),
+  vertex.size             =  sna::degree(x, cmode="indegree"),
+  bg.col                  = "transparent",
+  vertex.nsides           = 10,
+  vertex.color            = grDevices::hcl.colors(1),
+  vertex.size.range       = c(.01, .03, 4),
+  vertex.frame.color      = NULL,
+  vertex.rot              = 0,
+  vertex.frame.prop       = .2,
+  vertex.label            =  network::get.vertex.attribute(x, "vertex.names"),
+  vertex.label.fontsize   = NULL,
+  vertex.label.color      = adjustcolor("black", alpha.f = .80),
+  vertex.label.fontfamily = "sans",
+  vertex.label.fontface   = "plain",
+  vertex.label.show       = .3,
+  vertex.label.range      = c(5, 15),
+  edge.width              = 1,
+  edge.width.range        = c(1, 2),
+  edge.arrow.size         = NULL,
+  edge.color              = ~ ego(alpha = .1, col = "gray") + alter,
+  edge.curvature          = pi/3,
+  edge.line.lty           = "solid",
+  edge.line.breaks        = 5,
+  sample.edges            = 1,
+  skip.vertex             = FALSE,
+  skip.edges              = FALSE,
+  skip.arrows             =  !network::is.directed(x),
+  add                     = FALSE,
+  zero.margins            = TRUE,
+  edgelist
 ) {
 
   nplot.default(
-    x           = x,
-    layout      = layout,
+    x = x,
+    layout = layout,
     vertex.size = vertex.size,
+    bg.col = bg.col,
+    vertex.nsides = vertex.nsides,
+    vertex.color = vertex.color,
+    vertex.size.range = vertex.size.range,
+    vertex.frame.color = vertex.frame.color,
+    vertex.rot = vertex.rot,
+    vertex.frame.prop = vertex.frame.prop,
     vertex.label = vertex.label,
+    vertex.label.fontsize = vertex.label.fontsize,
+    vertex.label.color = vertex.label.color,
+    vertex.label.fontfamily = vertex.label.fontfamily,
+    vertex.label.fontface = vertex.label.fontface,
+    vertex.label.show = vertex.label.show,
+    vertex.label.range = vertex.label.range,
+    edge.width = edge.width,
+    edge.width.range = edge.width.range,
+    edge.arrow.size = edge.arrow.size,
+    edge.color = edge.color,
+    edge.curvature = edge.curvature,
+    edge.line.lty = edge.line.lty,
+    edge.line.breaks = edge.line.breaks,
+    sample.edges = sample.edges,
+    skip.vertex = skip.vertex,
+    skip.edges = skip.edges,
     skip.arrows = skip.arrows,
-    ...,
-    edgelist    = network::as.edgelist(x)
+    add = add,
+    zero.margins = zero.margins,
+    edgelist = network::as.edgelist(x)
   )
 
 }
@@ -151,11 +289,75 @@ nplot.network <- function(
 #' @export
 #' @rdname nplot
 #' @importFrom igraph graph_from_adjacency_matrix
-nplot.matrix <- function(x, ..., edgelist = NULL) {
+nplot.matrix <- function(
+  x,
+  layout,
+  vertex.size             = 1,
+  bg.col                  = "transparent",
+  vertex.nsides           = 10,
+  vertex.color            = grDevices::hcl.colors(1),
+  vertex.size.range       = c(.01, .03, 4),
+  vertex.frame.color      = NULL,
+  vertex.rot              = 0,
+  vertex.frame.prop       = .2,
+  vertex.label            = NULL,
+  vertex.label.fontsize   = NULL,
+  vertex.label.color      = adjustcolor("black", alpha.f = .80),
+  vertex.label.fontfamily = "sans",
+  vertex.label.fontface   = "plain",
+  vertex.label.show       = .3,
+  vertex.label.range      = c(5, 15),
+  edge.width              = 1,
+  edge.width.range        = c(1, 2),
+  edge.arrow.size         = NULL,
+  edge.color              = ~ ego(alpha = .1, col = "gray") + alter,
+  edge.curvature          = pi/3,
+  edge.line.lty           = "solid",
+  edge.line.breaks        = 5,
+  sample.edges            = 1,
+  skip.vertex             = FALSE,
+  skip.edges              = FALSE,
+  skip.arrows             = skip.edges,
+  add                     = FALSE,
+  zero.margins            = TRUE,
+  edgelist
+  ) {
+
+  x <- igraph::graph_from_adjacency_matrix(x)
+  if (missing(layout))
+    layout <- igraph::layout_nicely(x)
 
   nplot.igraph(
-    x = igraph::graph_from_adjacency_matrix(x),
-    ...,
+    x = x,
+    layout = layout,
+    vertex.size = vertex.size,
+    bg.col = bg.col,
+    vertex.nsides = vertex.nsides,
+    vertex.color = vertex.color,
+    vertex.size.range = vertex.size.range,
+    vertex.frame.color = vertex.frame.color,
+    vertex.rot = vertex.rot,
+    vertex.frame.prop = vertex.frame.prop,
+    vertex.label = vertex.label,
+    vertex.label.fontsize = vertex.label.fontsize,
+    vertex.label.color = vertex.label.color,
+    vertex.label.fontfamily = vertex.label.fontfamily,
+    vertex.label.fontface = vertex.label.fontface,
+    vertex.label.show = vertex.label.show,
+    vertex.label.range = vertex.label.range,
+    edge.width = edge.width,
+    edge.width.range = edge.width.range,
+    edge.arrow.size = edge.arrow.size,
+    edge.color = edge.color,
+    edge.curvature = edge.curvature,
+    edge.line.lty = edge.line.lty,
+    edge.line.breaks = edge.line.breaks,
+    sample.edges = sample.edges,
+    skip.vertex = skip.vertex,
+    skip.edges = skip.edges,
+    skip.arrows = skip.arrows,
+    add = add,
+    zero.margins = zero.margins,
     edgelist = NULL
   )
 
@@ -205,6 +407,18 @@ netplot_theme <- (function() {
 
 })()
 
+# Function to retrieve the dev.size only if there's an active device
+dev_size <- function(...) {
+
+  if (length(grDevices::dev.list())) {
+
+    grDevices::dev.size(...)
+
+  } else
+    c(7, 7)
+
+}
+
 #' @export
 #' @rdname nplot
 #' @param edgelist An edgelist.
@@ -233,15 +447,15 @@ nplot.default <- function(
   bg.col                  = "transparent",
   vertex.nsides           = 10,
   vertex.color            = grDevices::hcl.colors(1),
-  vertex.size.range       = c(.01, .03),
+  vertex.size.range       = c(.01, .03, 4),
   vertex.frame.color      = NULL,
   vertex.rot              = 0,
   vertex.frame.prop       = .2,
   vertex.label            = NULL,
   vertex.label.fontsize   = NULL,
-  vertex.label.color      = "black",
-  vertex.label.fontfamily = "HersheySans",
-  vertex.label.fontface   = "bold",
+  vertex.label.color      = adjustcolor("black", alpha.f = .80),
+  vertex.label.fontfamily = "sans",
+  vertex.label.fontface   = "plain",
   vertex.label.show       = .3,
   vertex.label.range      = c(5, 15),
   edge.width              = 1,
@@ -261,12 +475,12 @@ nplot.default <- function(
   edgelist
   ) {
 
-  # We turn off the device if not need
-  if (length(grDevices::dev.list()) == 0L) {
-    on.exit(
-      grDevices::dev.off(grDevices::dev.cur())
-    )
-  }
+  # # We turn off the device if not need
+  # if (length(grDevices::dev.list()) == 0L) {
+  #   on.exit(
+  #     grDevices::dev.off(grDevices::dev.cur())
+  #   )
+  # }
 
   # listing objects
   netenv <- environment()
@@ -424,11 +638,9 @@ nplot.default <- function(
   netenv$xlim <- range(netenv$layout[,1], na.rm=TRUE)
   netenv$ylim <- range(netenv$layout[,2], na.rm=TRUE)
 
-
   # Creating layout
   # Solution from this answer https://stackoverflow.com/a/48084527
-
-  asp <- grDevices::dev.size()
+  asp <- dev_size()
 
   lo  <- grid::grid.layout(
     widths  = grid::unit(1, "null"),
@@ -449,7 +661,7 @@ nplot.default <- function(
   if (!skip.vertex) {
     grob.vertex <- vector("list", netenv$N)
     for (v in 1:netenv$N)
-      grob.vertex[[v]] <- grob_vertex(netenv, v) 
+      grob.vertex[[v]] <- grob_vertex(netenv, v)
   } else
     grob.vertex <- NULL
 
@@ -593,19 +805,20 @@ nplot.default <- function(
 #' @param y,... Ignored
 print.netplot <- function(x, y = NULL, newpage = TRUE, legend = TRUE, ...) {
 
+  # If legend, then we avoid drawing twice
+  if (length(x$.legend_vertex_fill) && legend) {
+
+    color_nodes_legend(x)
+    return(invisible(x))
+
+  }
+
   # Drawing
   if (newpage) {
     grid::grid.newpage()
   }
 
   grid::grid.draw(x)
-
-  # If legend
-  if (legend) {
-
-    color_nodes_legend(x)
-
-  }
 
   # Storing the value
   .Last.netplot$set(x)

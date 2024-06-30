@@ -30,7 +30,7 @@ ig <- map_base_to_grid(function() plot(UKfaculty, main = "igraph"))
 nw <- map_base_to_grid(function() gplot(as.matrix(as_adj(UKfaculty)), coord = l_ukf, main = "sna"))
 
 ## ----nplot, fig.keep='none'---------------------------------------------------
-nplot(UKfaculty, layout = l_ukf, main="netplot")
+nplot(UKfaculty, layout = l_ukf)
 grid::grid.text("netplot", x = .05, y=.9)
 np <- grid::grid.grab()
 
