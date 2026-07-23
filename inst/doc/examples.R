@@ -58,10 +58,12 @@ gridExtra::grid.arrange(
   nplot(x_network, layout = l), ncol=2, nrow=1
 )
 
-## ----node-scaling, fig.width=7, fig.height=7, fig.cap="Modifying `vertex.size.range`: Each figure shows a different parameter for the vertex size range. From left to right, and top down: (a) Has all vertices with the same scale of 2.5%, (b) "----
+## ----node-scaling, fig.width=7, fig.height=7, fig.cap="Modifying `vertex.size.range`: use `NULL` to keep the supplied vertex sizes unchanged."----
 
 gridExtra::grid.arrange(
-  nplot(UKfaculty, layout = l_ukf, vertex.size.range = c(.025, .025)),
+  nplot(UKfaculty, layout = l_ukf,
+        vertex.size = rep(.025, vcount(UKfaculty)),
+        vertex.size.range = NULL),
   nplot(UKfaculty, layout = l_ukf, vertex.size.range = c(.01, .025)),
   nplot(UKfaculty, layout = l_ukf, vertex.size.range = c(.01, .025, 4)),
   nplot(UKfaculty, layout = l_ukf, vertex.size.range = c(.02, .05, 4)),
@@ -120,7 +122,38 @@ gridExtra::grid.arrange(
   nrow=2, ncol=2
 )
 
-## -----------------------------------------------------------------------------
-data(UKfaculty, package = "igraphdata")
-# fakenames <- sample
+## ----edge-width-setup---------------------------------------------------------
+set.seed(1)
+x_w <- make_ring(8)
+
+# Assign varying edge weights
+E(x_w)$weight <- c(1, 3, 1, 5, 2, 4, 1, 6)
+l_w <- layout_in_circle(x_w)
+
+## ----edge-width, fig.width=7, fig.height=3, fig.cap="Effect of `edge.width` and `edge.width.range`. Left: uniform width. Middle: weights mapped to 1–2 pt. Right: raw weights with `edge.width.range = NULL`."----
+gridExtra::grid.arrange(
+  nplot(x_w, layout = l_w, skip.arrows = TRUE,
+        vertex.size.range = c(.05, .05),
+        edge.width = 1,
+        edge.width.range = c(1, 2)),
+  nplot(x_w, layout = l_w, skip.arrows = TRUE,
+        vertex.size.range = c(.05, .05),
+        edge.width = E(x_w)$weight,
+        edge.width.range = c(1, 2)),
+  nplot(x_w, layout = l_w, skip.arrows = TRUE,
+        vertex.size.range = c(.05, .05),
+        edge.width = E(x_w)$weight,
+        edge.width.range = NULL),
+  ncol = 3, nrow = 1
+)
+
+## ----edge-width-set-gpar, fig.width=7, fig.height=3, fig.cap="Using `set_edge_gpar()` to change edge widths after plotting. Left: all edges set to 1 pt. Right: all edges set to 4 pt."----
+g <- nplot(x_w, layout = l_w, skip.arrows = TRUE,
+           vertex.size.range = c(.05, .05))
+
+gridExtra::grid.arrange(
+  set_edge_gpar(g, element = "line", lwd = 1),
+  set_edge_gpar(g, element = "line", lwd = 4),
+  ncol = 2
+)
 

@@ -20,19 +20,42 @@ edge_color_mixer <- function(i, j, vcols, p = .5, alpha = .15) {
 
 #' Plot a network
 #'
-#' This is a description.
+#' `nplot()` is the main function of the **netplot** package. It draws a network
+#' using the **grid** graphics system (the same engine that powers **ggplot2**),
+#' emphasizing aesthetics and providing sensible defaults that yield
+#' out-of-the-box nice visualizations. Compared with base `igraph`/`network`
+#' plots, `nplot()` auto-scales vertices and edges relative to the plotting
+#' device, draws truly curved edges, mixes edge colors from their endpoints,
+#' and fills the device efficiently.
+#'
+#' Vertex and edge aesthetics can be set directly (passing a vector) or,
+#' conveniently, mapped from graph attributes using a *formula* interface (see
+#' the "Mapping attributes with formulas" section below). The returned object is
+#' a **grid** `grob`, so it can be further edited with [set_vertex_gpar()] /
+#' [set_edge_gpar()], combined with other grid graphics (e.g. via
+#' `gridExtra::grid.arrange()`), or annotated with a legend through
+#' [nplot_legend()].
 #'
 #' @param x A graph. It supports networks stored as `igraph`, `network`, and
 #' matrices objects (see details).
 #' @param bg.col Color of the background.
 #' @param layout Numeric two-column matrix with the graph layout in x/y positions of the vertices.
-#' @param vertex.size Numeric vector of length `vcount(x)`. Absolute size of the vertex from 0 to 1.
-#' @param vertex.nsides Numeric vector of length `vcount(x)`. Number of sizes of
-#' the vertex. E.g. three is a triangle, and 100 approximates a circle.
-#' @param vertex.color Vector of length `vcount(x)`. Vertex HEX or built in colors.
-#' @param vertex.size.range Numeric vector of length 3. Relative size for the
+#' @param vertex.size Numeric vector of length `vcount(x)`. Absolute size of the
+#' vertex from 0 to 1. Can also be a one-sided formula (e.g. `~ degree`) naming a
+#' numeric vertex attribute to map sizes from (see "Mapping attributes with
+#' formulas").
+#' @param vertex.nsides Numeric vector of length `vcount(x)`. Number of sides of
+#' the vertex. E.g. three is a triangle, and 100 approximates a circle. Can also
+#' be a one-sided formula (e.g. `~ group`) naming a vertex attribute; each unique
+#' value is then mapped to a distinct shape (see "Mapping attributes with
+#' formulas").
+#' @param vertex.color Vector of length `vcount(x)`. Vertex HEX or built in
+#' colors. Can also be a one-sided formula (e.g. `~ group`) naming a vertex
+#' attribute to color vertices by (see "Mapping attributes with formulas").
+#' @param vertex.size.range Numeric vector of length 2 or 3, or `NULL`. Relative size for the
 #' minimum and maximum of the plot, and curvature of the scale. The third number
-#' is used as `size^rel[3]`.
+#' is used as `size^rel[3]`. If `NULL`, scaling is suppressed and `vertex.size`
+#' is used as is.
 #' @param vertex.frame.color Vector of length `vcount(x)`. Border of vertex in
 #' HEX or built in colors.
 #' @param vertex.frame.prop Vector of length `vcount(x)`. What proportion of the
@@ -51,10 +74,17 @@ edge_color_mixer <- function(i, j, vcols, p = .5, alpha = .15) {
 #' @param edge.color A vector of length `ecount(x)`. In HEX or built in colors.
 #' Can be `NULL` in which case
 #' the color is picked as a mixture between ego and alters' `vertex.color` values.
-#' @param edge.width Vector of length `ecount(x)` from 0 to 1. All edges will be
-#' the same size.
-#' @param edge.width.range Vector of length `ecount(x)` from 0 to 1. Adjusting
-#' width according to weight.
+#' @param edge.width Numeric vector of length `ecount(x)`. Relative edge widths.
+#' Values are normalized and then mapped to the range specified by `edge.width.range`,
+#' unless `edge.width.range` is `NULL`.
+#' For `nplot.igraph` and `nplot.network`, defaults to the "weight" edge
+#' attribute if present; otherwise all edges use width 1. Can also be a one-sided
+#' formula (e.g. `~ weight`) naming a numeric edge attribute (see "Mapping
+#' attributes with formulas").
+#' @param edge.width.range Numeric vector of length 2, or `NULL`. The minimum and maximum line
+#' widths (in points) to use when mapping `edge.width` values. For example,
+#' `c(1, 4)` maps the smallest edge weight to 1pt and the largest to 4pt.
+#' If `NULL`, scaling is suppressed and `edge.width` is used as is.
 #' @param edge.arrow.size Vector of length `ecount(x)` from 0 to 1.
 #' @param edge.curvature Numeric vector of length `ecount(x)`. Curvature of edges
 #' in terms of radians.
@@ -76,7 +106,33 @@ edge_color_mixer <- function(i, j, vcols, p = .5, alpha = .15) {
 #' @details
 #' When `x` is of class [matrix], it will be passed to [igraph::graph_from_adjacency_matrix()].
 #'
-#' In the case of `edge.color`, the user can specify colors using [netplot-formulae].
+#' @section Mapping attributes with formulas:
+#'
+#' Several aesthetics can be mapped directly from graph attributes by passing a
+#' one-sided formula naming the attribute, instead of building the vector by
+#' hand. The mapping depends on the aesthetic:
+#'
+#' - `vertex.color = ~ attr` colors vertices by the vertex attribute `attr`.
+#'   Character/factor attributes are mapped to a categorical palette, numeric
+#'   attributes to a continuous gradient, and logical attributes to two colors.
+#'   When used this way, `print()`-ing the resulting plot also draws a matching
+#'   legend: a categorical key for discrete attributes and a continuous color
+#'   bar for continuous ones.
+#' - `vertex.nsides = ~ attr` maps each unique value of `attr` to a distinct
+#'   vertex shape (triangle, square, pentagon, ...).
+#' - `vertex.size = ~ attr` and `edge.width = ~ attr` scale sizes/widths from a
+#'   numeric vertex/edge attribute.
+#' - `edge.color` uses a different, richer formula grammar based on `ego()` and
+#'   `alter()` to mix the endpoints' colors; see [netplot-formulae].
+#'
+#' For `vertex.nsides`, `vertex.size`, and `edge.width` the right-hand side of
+#' the formula is *evaluated* with the graph's attributes in scope, so besides
+#' bare names you can use expressions, e.g. `edge.width = ~ log1p(weight)` or
+#' `vertex.size = ~ degree ^ 2`.
+#'
+#' For example, `nplot(x, vertex.color = ~ gender, vertex.size = ~ degree)`
+#' colors vertices by the `gender` attribute and sizes them by `degree`. The
+#' same attribute-mapping formulas also work in [set_vertex_gpar()].
 #' @return An object of class `c("netplot", "gTree", "grob", "gDesc")`. The object
 #' has an additional set of attributes:
 #' * `.xlim, .ylim` vector of size two with the x-asis/y-axis limits.
@@ -91,6 +147,16 @@ edge_color_mixer <- function(i, j, vcols, p = .5, alpha = .15) {
 #'
 #' plot(x) # ala igraph
 #' nplot(x) # ala netplot
+#'
+#' # Mapping aesthetics from vertex attributes using formulas
+#' V(x)$grp <- sample(letters[1:3], vcount(x), replace = TRUE)
+#' V(x)$deg <- degree(x)
+#' nplot(
+#'   x,
+#'   vertex.color  = ~ grp, # color by the categorical attribute
+#'   vertex.nsides = ~ grp, # and give each group a distinct shape
+#'   vertex.size   = ~ deg  # size by a numeric attribute
+#' )
 #' @name nplot
 #' @aliases netplot
 NULL
@@ -234,7 +300,7 @@ nplot.network <- function(
   vertex.label.fontface   = "plain",
   vertex.label.show       = .3,
   vertex.label.range      = c(5, 15),
-  edge.width              = 1,
+  edge.width              = network::get.edge.attribute(x, "weight"),
   edge.width.range        = c(1, 2),
   edge.arrow.size         = NULL,
   edge.color              = ~ ego(alpha = .1, col = "gray") + alter,
@@ -249,6 +315,9 @@ nplot.network <- function(
   zero.margins            = TRUE,
   edgelist
 ) {
+
+  if (!length(edge.width))
+    edge.width <- 1L
 
   nplot.default(
     x = x,
@@ -499,12 +568,12 @@ nplot.default <- function(
 
   # Mapping attributes ---------------------------------------------------------
 
-  # Nsides
+  # Nsides. The formula RHS is evaluated against the graph's vertex attributes,
+  # so both bare names (~ group) and expressions (~ cut(age, 3)) work.
   if (length(vertex.nsides) && inherits(vertex.nsides, "formula")) {
 
-    rhs <- as.character(vertex.nsides[[2]])
     vertex.nsides <- map_attribute_to_shape(
-      get_vertex_attribute(graph = x, attribute = rhs)
+      eval_attribute_formula(graph = x, formula = vertex.nsides, type = "vertex")
     )
 
   }
@@ -512,8 +581,9 @@ nplot.default <- function(
   # And size
   if (length(vertex.size) && inherits(vertex.size, "formula")) {
 
-    rhs <- as.character(vertex.size[[2]])
-    vertex.size <- get_vertex_attribute(graph = x, attribute = rhs)
+    vertex.size <- eval_attribute_formula(
+      graph = x, formula = vertex.size, type = "vertex"
+      )
 
     # Now check if it is numeric. If not, it should return an error
     if (!is.numeric(vertex.size)) {
@@ -525,8 +595,9 @@ nplot.default <- function(
   # Edges width
   if (length(edge.width) && inherits(edge.width, "formula")) {
 
-    rhs <- as.character(edge.width[[2]])
-    edge.width <- get_edge_attribute(graph = x, attribute = rhs)
+    edge.width <- eval_attribute_formula(
+      graph = x, formula = edge.width, type = "edge"
+      )
 
     # Now check if it is numeric. If not, it should return an error
     if (!is.numeric(edge.width)) {
@@ -571,6 +642,13 @@ nplot.default <- function(
 
   # end ------------------------------------------------------------------------
 
+  if (
+    length(edge.line.lty) &&
+    length(edge.line.lty) != 1L &&
+    length(edge.line.lty) != netenv$M
+  )
+    stop("edge.line.lty must have length 1 or one value per plotted edge.")
+
   # This function will repeat a patter taking into account the number of columns
   .rep <- function(x, .times) {
     if (grepl("range$", p) | inherits(x, "formula"))
@@ -605,10 +683,17 @@ nplot.default <- function(
     netenv$vertex.size <- rep(0, netenv$N)
 
   # Rescaling edges
-  netenv$edge.width <- rescale_size(
-    netenv$edge.width/max(netenv$edge.width, na.rm=TRUE),
-    rel = netenv$edge.width.range
-    )
+  if (is.null(netenv$edge.width.range)) {
+    netenv$edge.width <- rescale_size(
+      netenv$edge.width,
+      rel = netenv$edge.width.range
+      )
+  } else {
+    netenv$edge.width <- rescale_size(
+      netenv$edge.width/max(netenv$edge.width, na.rm=TRUE),
+      rel = netenv$edge.width.range
+      )
+  }
 
   # Rescaling arrows
   if (!length(netenv$edge.arrow.size))
@@ -618,11 +703,15 @@ nplot.default <- function(
     netenv$edge.arrow.size <- rep(0.0, length(netenv$edge.arrow.size))
 
   # Rescaling text
-  if (!length(netenv$vertex.label.fontsize))
+  if (!length(netenv$vertex.label.fontsize)) {
+    if (is.null(netenv$vertex.label.range))
+      netenv$vertex.label.range <- c(5, 15)
+
     netenv$vertex.label.fontsize <- rescale_size(
       netenv$vertex.size,
       rel = netenv$vertex.label.range
       )
+  }
 
   # Computing label threshold
   netenv$label_threshold <- stats::quantile(
@@ -774,6 +863,23 @@ nplot.default <- function(
     }
   }
 
+  # Explicitly set edge line widths to ensure edge.width is applied
+  if (!skip.edges) {
+    ans <- set_edge_gpar(
+      x       = ans,
+      element = "line",
+      lwd     = as.vector(netenv$edge.width)
+    )
+  }
+
+  if (!skip.arrows) {
+    ans <- set_edge_gpar(
+      x       = ans,
+      element = "arrow",
+      lwd     = as.vector(netenv$edge.width)
+    )
+  }
+
   ans
 
 }
@@ -889,5 +995,3 @@ locate_vertex <- function(x = NULL) {
 
 
 # Look at `chull` from `grDevices`
-
-
